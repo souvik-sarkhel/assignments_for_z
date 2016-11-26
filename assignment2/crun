@@ -1,0 +1,27 @@
+#!/bin/bash
+# The below conditions is for showing the usage of crun command
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    echo 'Runs command on list of hosts specified as host1,host2,host3,....,hostn'
+    echo 'Usage: crun [list_of_hostnames_comma_seperated]'
+    exit 0
+fi
+#If the number of arguments passed to the command is less than 1 then it prints the correct usage of the command
+if [ $# -lt 1 ]; then
+    echo 'Usage: crun [list_of_hostnames_comma_seperated]'
+    exit
+fi
+#It prints the line and waits for the user to input a command which will be run on all the hosts provided in the comma seperated list
+echo "Enter command to run"
+read cmd
+
+option=''
+This condition adds -t option i.e- force pseudo-tty allocation needed to run sudo commands if sudo keyword is present in the command
+if [ "$(echo $cmd | head -c 4)" = "sudo" ]; then
+    option='-t'
+fi
+#This loop is to iterate through the list of hosts given and run the command 
+for ip in $(echo $1 | sed "s/,/ /g");do
+        echo "$ip ---"
+        ssh -C $option $ip $cmd
+        echo
+done
