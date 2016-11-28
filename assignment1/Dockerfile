@@ -1,6 +1,6 @@
 #This command downloads the 
 FROM centos:6
-MAINTAINER Souvik Sarkhel <souvik.sarkhel@gmail.com>
+MAINTAINER Souvik_Sarkhel <souvik.sarkhel@gmail.com>
 
 USER root
 # update and patch the the base image that has been downloaded
@@ -29,7 +29,7 @@ RUN cd /opt && \
     cd Python-2.7.6 && \
     ./configure --prefix=/usr/local && \
     make && \
-    make altinstall
+	make altinstall
 
 #Create a mongodb repo file so that one can install the mongo through yum command
 RUN echo " " >> /etc/yum.repos.d/mongodb.repo && \
@@ -53,24 +53,29 @@ RUN yum -y install java-1.7.0-openjdk
 ENV JAVA_HOME /usr/lib/jvm/jre-1.7.0-openjdk.x86_64
 ENV PATH $PATH:$JAVA_HOME/bin
 
+#Exporting java environment variables
 RUN echo "export JAVA_HOME=/usr/lib/jvm/jre-1.7.0-openjdk.x86_64" >> ~/.bashrc && \
-    echo "PATH=$PATH:$JAVA_HOME/bin" >> ~/.bashrc && \
+    echo "export PATH=$PATH:$JAVA_HOME/bin" >> ~/.bashrc && \
     source ~/.bashrc
-#Download and untar the Apache Tomcat 7 into /usr/share and give 755 permission
+
+#Download and untar the Apache Tomcat 7 into /usr/share ,give 755 permission and add JAVA_HOME path in catalina.sh
 RUN cd /usr/share && \
     wget http://www-eu.apache.org/dist/tomcat/tomcat-7/v7.0.73/bin/apache-tomcat-7.0.73.tar.gz && \
     mkdir tomcat && \
     tar -zxf apache-tomcat-7.0.73.tar.gz -C /usr/share/tomcat --strip-components=1 && \
-	chown 755 -R /usr/share/tomcat
+    sed -i "2i JAVA_HOME=/usr/lib/jvm/jre-1.7.0-openjdk.x86_64" /usr/share/tomcat/bin/catalina.sh && \
+    chown 755 -R /usr/share/tomcat/
 	
+#Defining tomcat env variable
 ENV TOMCAT_HOME /usr/share/tomcat
 
-RUN /usr/share/tomcat/bin/startup.sh	
-# Expose port #27017 for MongoDB and #8080 for Apache Tomcat from the container to the host
-EXPOSE 22 8080 27017 
+#Copy bootStrap.sh script which starts mongodb and tomcat 
+ADD installs/bootStrap.sh /etc	
+RUN chown root:root /etc/bootStrap.sh
+RUN chmod 700 /etc/bootStrap.sh
 
-# Set /usr/bin/mongod as the dockerized entry-point application
-#ENTRYPOINT ["/usr/bin/mongod"]
-#ENTRYPOINT ["/usr/share/tomcat/bin/startup.sh"]
+#Set bootStrap.sh file as the default command to run when the container launches
+CMD ["/etc/bootStrap.sh", "-d"]
 
-
+# Expose port #8080 for Apache Tomcat from the container to the host
+EXPOSE 8080
